@@ -15,7 +15,7 @@ export function EvVarName({ eventVar }: { eventVar: number }) {
 	const { getVarName } = useContext(VisualEditorContext);
 	const varInfo = getVarName(eventVar, "event");
 	return (
-		<span className="font-mono font-semibold" style={{ color: varInfo.color }}>
+		<span className="font-mono font-semibold min-w-fit" style={{ color: varInfo.color }}>
 			<MdEvent className="inline-block -mr-1.5" /> {varInfo.name}
 		</span>
 	);
@@ -32,7 +32,7 @@ export function ObVarName({ obVar, disabledStyle }: { obVar: number; disabledSty
 	const varInfo = getVarName(obVar, "object");
 	return (
 		<span
-			className={clsx("font-mono font-semibold", disabledStyle === true && "text-stone-400")}
+			className={clsx("font-mono font-semibold min-w-fit", disabledStyle === true && "text-stone-400")}
 			style={{ color: disabledStyle === true ? undefined : varInfo.color }}
 		>
 			<LuBox className="inline-block -mr-1.5" /> {varInfo.name}

@@ -22,6 +22,7 @@ import {
 	AttributeValueFilterDisplay,
 	AttributeValueFilterSelector,
 	ChildSetSelector,
+	defaultTimeValueFilter,
 	MinMaxDisplayWithSugar,
 } from "../filter-helpers";
 import { EvOrObVarName, EvVarName, ObVarName } from "../variable-names";
@@ -34,7 +35,7 @@ function defaultValueFilterForAttr(
 	isEvent: boolean,
 ): ValueFilter | undefined {
 	if (attributeName === "ocel:id") return { type: "String", is_in: [""] };
-	if (attributeName === "ocel:time" && isEvent) return { type: "Time", from: null, to: null };
+	if (attributeName === "ocel:time" && isEvent) return defaultTimeValueFilter();
 	const dtype = ocelTypes
 		.flatMap((t) => t.attributes)
 		.find((a) => a.name === attributeName)
@@ -47,7 +48,7 @@ function defaultValueFilterForAttr(
 		case "boolean":
 			return { type: "Boolean", is_true: true };
 		case "time":
-			return { type: "Time", from: null, to: null };
+			return defaultTimeValueFilter();
 		case "string":
 			return { type: "String", is_in: [""] };
 		default:
@@ -134,8 +135,11 @@ registerEditor<Filter & { type: "O2E" }>(
 	function O2EDisplay({ value }) {
 		return (
 			<div className="flex items-center gap-x-1 font-normal text-sm">
-				<EvVarName eventVar={value.event} /> <LuLink /> <ObVarName obVar={value.object} />
-				{value.qualifier != null ? `@${value.qualifier}` : ""}
+				<EvVarName eventVar={value.event} /> <LuLink className="min-w-fit" />{" "}
+				<ObVarName obVar={value.object} />
+				<span className="max-w-full truncate">
+					{value.qualifier != null ? `@${value.qualifier}` : ""}
+				</span>
 			</div>
 		);
 	},
@@ -213,8 +217,11 @@ registerEditor<Filter & { type: "O2O" }>(
 	function O2ODisplay({ value }) {
 		return (
 			<div className="flex items-center gap-x-1 font-normal text-sm">
-				<ObVarName obVar={value.object} /> <LuLink /> <ObVarName obVar={value.other_object} />
-				{value.qualifier != null ? `@${value.qualifier}` : ""}
+				<ObVarName obVar={value.object} /> <LuLink className="min-w-fit" />{" "}
+				<ObVarName obVar={value.other_object} />
+				<span className="max-w-full truncate">
+					{value.qualifier != null ? `@${value.qualifier}` : ""}
+				</span>
 			</div>
 		);
 	},
@@ -580,7 +587,7 @@ registerEditor<Filter & { type: "EventAttributeValueFilter" }>(
 		const { getTypesForVariable } = useContext(VisualEditorContext);
 		const eventTypes = getTypesForVariable(nodeID, value.event, "event");
 		return (
-			<div className="flex items-start gap-x-2 pt-4">
+			<div className="flex flex-wrap items-start gap-x-2 gap-y-2 pt-4">
 				<EventVarSelector
 					eventVars={availableEventVars}
 					value={value.event}
@@ -636,7 +643,7 @@ registerEditor<Filter & { type: "ObjectAttributeValueFilter" }>(
 		const { getTypesForVariable } = useContext(VisualEditorContext);
 		const objectTypes = getTypesForVariable(nodeID, value.object, "object");
 		return (
-			<div className="flex items-start gap-x-2 pt-4">
+			<div className="flex flex-wrap items-start gap-x-2 gap-y-2 pt-4">
 				<ObjectVarSelector
 					objectVars={availableObjectVars}
 					value={value.object}

@@ -1,12 +1,19 @@
+import { Cross2Icon } from "@radix-ui/react-icons";
 import clsx from "clsx";
-import type { ReactNode } from "react";
-import { LuDelete } from "react-icons/lu";
-import { Button } from "@/components/ui/button";
+import { type ReactNode, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Combobox } from "@/components/ui/combobox";
+import { DateTimeRangeInput } from "@/components/ui/date-time-range-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ValueFilter } from "@/types/generated/ValueFilter";
+
+// Default Time value filter: "after" the start of the current year (UTC).
+export function defaultTimeValueFilter(): ValueFilter & { type: "Time" } {
+	const year = new Date().getFullYear();
+	return { type: "Time", from: new Date(Date.UTC(year, 0, 1)).toISOString(), to: null };
+}
 
 export function ChildSetSelector({
 	value,
@@ -71,12 +78,12 @@ export function AttributeValueFilterSelector({
 			case "String":
 				return onChange({ type: "String", is_in: [""] });
 			case "Time":
-				return onChange({ type: "Time", from: null, to: null });
+				return onChange(defaultTimeValueFilter());
 		}
 	};
 
 	return (
-		<div className="flex items-start gap-x-2">
+		<div className="flex flex-col items-start gap-2">
 			<Combobox
 				options={["Float", "Integer", "Boolean", "String", "Time"].map((v) => ({
 					label: v,
@@ -88,7 +95,7 @@ export function AttributeValueFilterSelector({
 				value={value?.type ?? "String"}
 			/>
 			{value?.type === "Boolean" && (
-				<Label className="flex gap-x-2 items-center justify-center">
+				<Label className="flex h-9 items-center gap-x-2">
 					<Checkbox
 						checked={value.is_true}
 						onCheckedChange={(c) => onChange({ ...value, is_true: Boolean(c) })}
@@ -148,53 +155,55 @@ function StringListInput({
 	value: ValueFilter & { type: "String" };
 	onChange: (value: ValueFilter) => void;
 }) {
+	const [text, setText] = useState("");
+	const values = value.is_in.filter((v) => v !== "");
+
+	const commit = (raw: string) => {
+		const v = raw.trim();
+		setText("");
+		if (!v || values.includes(v)) return;
+		onChange({ ...value, is_in: [...values, v] });
+	};
+	const removeAt = (i: number) => {
+		onChange({ ...value, is_in: values.filter((_, idx) => idx !== i) });
+	};
+
 	return (
-		<div className="flex flex-col w-full -mt-6">
-			<div className="h-6">Value should be in:</div>
-			<div className="flex flex-col w-full gap-2 mb-2">
-				{value.is_in.map((v, i) => (
-					<div key={i} className="w-full flex items-center gap-x-2">
-						<Input
-							type="text"
-							value={v}
-							onChange={(ev) => {
-								const newValues = [...value.is_in];
-								newValues[i] = ev.currentTarget.value;
-								onChange({ ...value, is_in: newValues });
-							}}
-						/>
-						<Button
-							className="shrink-0 w-6 h-6"
-							size="icon"
-							variant="outline"
-							onClick={() => {
-								const newValues = value.is_in.filter((_, idx) => idx !== i);
-								onChange({ ...value, is_in: newValues });
-							}}
+		<div className="flex w-72 flex-col gap-1">
+			<span className="text-xs text-muted-foreground">Value is one of</span>
+			<div className="flex min-h-9 w-full flex-wrap items-center gap-1 rounded-md border border-input bg-transparent px-2 py-1 text-sm shadow-sm focus-within:border-gray-500">
+				{values.map((v, i) => (
+					<Badge key={`${v}-${i}`} variant="secondary" className="gap-1 pr-1 font-normal">
+						<span className="max-w-[12rem] truncate">{v}</span>
+						<button
+							type="button"
+							aria-label={`Remove ${v}`}
+							className="rounded-sm opacity-60 hover:opacity-100"
+							onClick={() => removeAt(i)}
 						>
-							<LuDelete />
-						</Button>
-					</div>
+							<Cross2Icon className="size-3" />
+						</button>
+					</Badge>
 				))}
-			</div>
-			<div className="text-right">
-				<Button
-					variant="outline"
-					onClick={() => onChange({ ...value, is_in: [...value.is_in, ""] })}
-				>
-					Add Option
-				</Button>
+				<input
+					type="text"
+					className="min-w-[6rem] flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+					placeholder={values.length === 0 ? "Type a value, press Enter" : ""}
+					value={text}
+					onChange={(ev) => setText(ev.currentTarget.value)}
+					onKeyDown={(ev) => {
+						if (ev.key === "Enter" || ev.key === ",") {
+							ev.preventDefault();
+							commit(text);
+						} else if (ev.key === "Backspace" && text === "" && values.length > 0) {
+							removeAt(values.length - 1);
+						}
+					}}
+					onBlur={() => commit(text)}
+				/>
 			</div>
 		</div>
 	);
-}
-
-function isoToLocalInput(iso: string | null): string {
-	if (!iso) return "";
-	const d = new Date(iso);
-	if (Number.isNaN(d.getTime())) return "";
-	const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-	return local.toISOString().slice(0, 16);
 }
 
 function TimeRangeInput({
@@ -205,26 +214,11 @@ function TimeRangeInput({
 	onChange: (value: ValueFilter) => void;
 }) {
 	return (
-		<div>
-			<Input
-				type="datetime-local"
-				value={isoToLocalInput(value.from)}
-				onChange={(ev) => {
-					const v = ev.currentTarget.value;
-					const iso = v ? new Date(v).toISOString() : null;
-					onChange({ ...value, from: iso });
-				}}
-			/>
-			<Input
-				type="datetime-local"
-				value={isoToLocalInput(value.to)}
-				onChange={(ev) => {
-					const v = ev.currentTarget.value;
-					const iso = v ? new Date(v).toISOString() : null;
-					onChange({ ...value, to: iso });
-				}}
-			/>
-		</div>
+		<DateTimeRangeInput
+			from={value.from}
+			to={value.to}
+			onChange={({ from, to }) => onChange({ ...value, from, to })}
+		/>
 	);
 }
 
