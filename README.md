@@ -10,21 +10,21 @@
 
 Adds the following on top of upstream OCPQ:
 
-- **`backend/shared/src/kanon/`** — the anonymity framework itself, as a submodule of
+- **`backend/shared/src/kanon/`**: the anonymity framework itself, as a submodule of
   the `ocpq_shared` crate:
-  - `policy.rs` — `Pattern`, `QuasiIdentifier`, `AnonPolicy` (anonymity policies:
+  - `policy.rs`: `Pattern`, `QuasiIdentifier`, `AnonPolicy` (anonymity policies:
     patterns, protected/source variables, QID attributes, sensitive attributes, k/l/t
     parameters).
-  - `activation.rs` — predicate compatibility, pattern matching (`find_matchings`), and
+  - `activation.rs`: predicate compatibility, pattern matching (`find_matchings`), and
     active binding set construction.
-  - `fingerprint.rs` — source-set computation and the fingerprint construction
+  - `fingerprint.rs`: source-set computation and the fingerprint construction
     (marginal fingerprints per QID, combined into equivalence classes).
-  - `properties.rs` — evaluation of k-anonymity, l-diversity and t-closeness against
+  - `properties.rs`: evaluation of k-anonymity, l-diversity and t-closeness against
     the fingerprint partition, plus limit analysis (`find_k_max`, `find_l_max`,
     `find_t_min`) and risk analysis (`elements_at_risk`, `sensitive_values_at_risk`).
-  - `report.rs` — `AnonReport` / `EquivClass`, the structured result of evaluating a
+  - `report.rs`: `AnonReport` / `EquivClass`, the structured result of evaluating a
     policy (`check_policy`, the module's single public entry point).
-- **`kanon-demo`** (new Cargo workspace member) — a timing harness (`main.rs`) that
+- **`kanon-demo`** (new Cargo workspace member): a timing harness (`main.rs`) that
   runs nine experiments (three binding boxes × three anonymity policies) over a BPI
   Challenge 2017 OCEL, timing each phase of the pipeline (activation, `build_context`,
   `eval_k/l/t`, `find_k/l/t_max/min`, risk analysis).
