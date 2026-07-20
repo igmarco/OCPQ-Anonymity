@@ -23,6 +23,8 @@ pub mod ocel_qualifiers {
 pub mod binding_box;
 pub mod db_translation;
 pub mod discovery;
+/// Anonymity framework for OCPQ (k-anonymity, l-diversity, t-closeness).
+pub mod kanon;
 pub mod ocel_graph;
 pub mod path_schemas;
 pub mod trad_event_log;
