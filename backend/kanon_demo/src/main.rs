@@ -1,7 +1,10 @@
 //! # `kanon_demo` — timing harness for the k-anonymity framework
 //!
 //! Runs nine experiments (3 binding boxes × 3 policies) over the BPI
-//! Challenge 2017 OCEL, timing each pipeline phase.
+//! Challenge 2017 OCEL, timing each pipeline phase. Every measured phase is
+//! run `n_runs` times (second CLI argument, default 1) and reported as the
+//! mean over those runs, following the same convention as the base OCPQ
+//! evaluation (mean execution time over repeated runs).
 //!
 //! ## Design: events as the protected type
 //!
@@ -19,10 +22,15 @@
 //! 4. `find_k_max`, `find_l_max`, `find_t_min`
 //! 5. `elements_at_risk` + `sensitive_values_at_risk`
 //!
+//! Steps 1–2 are deterministic given a fixed (binding box, policy) pair, so
+//! only their *duration* varies run to run; all reported counts, classes,
+//! and k/l/t outcomes are taken from the last run and are identical across
+//! runs by construction.
+//!
 //! ## Usage
 //!
 //! ```text
-//! cargo run --release -p kanon-demo -- <path/to/bpic2017.json>
+//! cargo run --release -p kanon-demo -- <path/to/bpic2017.json> [n_runs]
 //! ```
 
 use std::collections::HashMap;
@@ -40,7 +48,7 @@ use ocpq_shared::binding_box::structs::{
 };
 use ocpq_shared::kanon::{
     build_context, elements_at_risk, eval_k, eval_l, eval_t, find_k_max, find_l_max, find_t_min,
-    sensitive_values_at_risk,
+    sensitive_values_at_risk, SensitiveAttrRisk,
     policy::{AnonPolicy, Pattern, ProtectedVar, QidAttribute, QuasiIdentifier, SourceVar},
 };
 
@@ -69,6 +77,24 @@ impl Timings {
         self.0.push((phase, d, note.into()));
     }
 
+    /// Element-wise mean over `runs`. Assumes every run recorded the same
+    /// phases in the same order — true here, since which phases run is
+    /// determined solely by policy activation, itself deterministic for a
+    /// fixed (binding box, policy) pair. Notes (which carry non-timing
+    /// results such as class counts) are taken from the last run; they are
+    /// identical across runs for the same reason.
+    fn average(runs: &[Timings]) -> Timings {
+        let n = runs.len() as u32;
+        let phases = &runs[0].0;
+        let mut out = Vec::with_capacity(phases.len());
+        for (i, (phase, _, _)) in phases.iter().enumerate() {
+            let total = runs.iter().fold(Duration::ZERO, |acc, r| acc + r.0[i].1);
+            let note = runs.last().unwrap().0[i].2.clone();
+            out.push((*phase, total / n, note));
+        }
+        Timings(out)
+    }
+
     fn print(&self, header: &str) {
         println!("  ┌─ {header}");
         for (phase, d, note) in &self.0 {
@@ -86,9 +112,19 @@ impl Timings {
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let path = args.get(1).cloned().unwrap_or_else(|| {
-        eprintln!("Usage: kanon_demo <path/to/bpic2017.json>");
+        eprintln!("Usage: kanon_demo <path/to/bpic2017.json> [n_runs]");
         std::process::exit(1);
     });
+    let n_runs: usize = match args.get(2) {
+        None => 1,
+        Some(s) => match s.parse() {
+            Ok(0) | Err(_) => {
+                eprintln!("n_runs must be a positive integer; got: {s}");
+                std::process::exit(1);
+            }
+            Ok(n) => n,
+        },
+    };
 
     println!("Loading OCEL from: {path}");
     let t0 = Instant::now();
@@ -99,15 +135,18 @@ fn main() {
         ocel.get_num_evs(),
         ocel.get_num_obs(),
     );
+    if n_runs > 1 {
+        println!("Each timing below is the mean of {n_runs} runs.\n");
+    }
 
     let bb_q1 = build_bb_q1();
     let bb_q6 = build_bb_q6();
     let bb_q7 = build_bb_q7();
 
     println!("Evaluating binding boxes with the OCPQ engine...");
-    let (out_q1, t_q1) = timed_evaluate(&bb_q1, &ocel, "BB_Q1");
-    let (out_q6, t_q6) = timed_evaluate(&bb_q6, &ocel, "BB_Q6");
-    let (out_q7, t_q7) = timed_evaluate(&bb_q7, &ocel, "BB_Q7");
+    let (out_q1, t_q1) = timed_evaluate(&bb_q1, &ocel, "BB_Q1", n_runs);
+    let (out_q6, t_q6) = timed_evaluate(&bb_q6, &ocel, "BB_Q6", n_runs);
+    let (out_q7, t_q7) = timed_evaluate(&bb_q7, &ocel, "BB_Q7", n_runs);
     println!("  BB_Q1: {} bindings in {:.1} ms", out_q1.len(), t_q1.as_secs_f64() * 1000.0);
     println!("  BB_Q6: {} bindings in {:.1} ms", out_q6.len(), t_q6.as_secs_f64() * 1000.0);
     println!("  BB_Q7: {} bindings in {:.1} ms\n", out_q7.len(), t_q7.as_secs_f64() * 1000.0);
@@ -137,7 +176,7 @@ fn main() {
     println!("══════════════════════════════════════════════════════════════════");
     for (label, bbox, out, policy_fn) in experiments {
         println!("\n▶ {label}");
-        run_experiment(bbox, out, policy_fn(), &ocel);
+        run_experiment(bbox, out, policy_fn(), &ocel, n_runs);
         println!("══════════════════════════════════════════════════════════════════");
     }
 }
@@ -146,12 +185,34 @@ fn main() {
 // Per-experiment execution, timed by phase
 // =============================================================================
 
-fn run_experiment(
+/// Deterministic (non-timing) outcome of one experiment run — identical
+/// across repeated runs of the same (binding box, policy) pair, since which
+/// phases run and their results depend only on activation, not on timing.
+enum Outcome {
+    NotActivated,
+    Activated {
+        n_elements: usize,
+        n_classes: usize,
+        k_ok: bool,
+        l_ok: bool,
+        t_ok: bool,
+        k_max: usize,
+        l_max: usize,
+        t_min: Option<f64>,
+        at_risk: Vec<String>,
+        sens_risk: Vec<SensitiveAttrRisk>,
+    },
+}
+
+/// Runs the pipeline once, timing each phase. Returns both the per-phase
+/// [`Timings`] and the (deterministic) [`Outcome`]; [`run_experiment`] calls
+/// this `n_runs` times and averages the former.
+fn run_once(
     bbox: &BindingBox,
     out: &[Arc<Binding>],
-    policy: AnonPolicy,
+    policy: &AnonPolicy,
     ocel: &SlimLinkedOCEL,
-) {
+) -> (Timings, Outcome) {
     let mut t = Timings::new();
 
     // Phase 1: activation
@@ -167,16 +228,14 @@ fn run_experiment(
 
     // Phase 2: build_context
     let t2 = Instant::now();
-    let ctx = build_context(&policy, bbox, out, ocel);
+    let ctx = build_context(policy, bbox, out, ocel);
     let n_classes  = ctx.class_map.len();
     let n_elements: usize = ctx.class_map.values().map(|v| v.len()).sum();
     t.record("build_context (active BS + source sets + fingerprints)", t2.elapsed(),
         format!("{n_elements} elements → {n_classes} classes"));
 
     if !ctx.policy_activated() {
-        t.print("→ Policy not activated");
-        println!("  (metrics not evaluated)");
-        return;
+        return (t, Outcome::NotActivated);
     }
 
     // Phase 3: eval_k / eval_l / eval_t
@@ -212,23 +271,61 @@ fn run_experiment(
             at_risk.len(),
             sens_risk.iter().filter(|r| !r.at_risk_values.is_empty()).count()));
 
-    t.print("Phases");
-    println!("  Summary:");
-    println!("    Protected elements:     {n_elements}");
-    println!("    Equivalence classes:    {n_classes}");
-    println!("    k={} {} | l={} {} | t={} {}",
-        policy.k, if k_result.satisfied { "✓" } else { "✗" },
-        policy.l, if l_result.satisfied { "✓" } else { "✗" },
-        policy.t, if t_result.satisfied { "✓" } else { "✗" });
-    println!("    k_max={k_max} | l_max={l_max} | t_min={t_min:?}");
-    if !at_risk.is_empty() {
-        println!("    Elements at k-risk: {} (first 5: {:?})",
-            at_risk.len(), at_risk.iter().take(5).collect::<Vec<_>>());
+    (t, Outcome::Activated {
+        n_elements, n_classes,
+        k_ok: k_result.satisfied, l_ok: l_result.satisfied, t_ok: t_result.satisfied,
+        k_max, l_max, t_min, at_risk, sens_risk,
+    })
+}
+
+/// Runs [`run_once`] `n_runs` times, averages the per-phase timings, and
+/// prints the result. The reported counts, classes and k/l/t outcomes come
+/// from the last run (identical across runs by construction; see
+/// [`Outcome`]).
+fn run_experiment(
+    bbox: &BindingBox,
+    out: &[Arc<Binding>],
+    policy: AnonPolicy,
+    ocel: &SlimLinkedOCEL,
+    n_runs: usize,
+) {
+    let mut timings = Vec::with_capacity(n_runs);
+    let mut outcome = Outcome::NotActivated;
+    for _ in 0..n_runs {
+        let (t, o) = run_once(bbox, out, &policy, ocel);
+        timings.push(t);
+        outcome = o;
     }
-    for r in &sens_risk {
-        if !r.at_risk_values.is_empty() {
-            println!("    At-risk values [{}]: {:?}", r.attr_name,
-                r.at_risk_values.iter().take(10).collect::<Vec<_>>());
+    let t = Timings::average(&timings);
+    let suffix = if n_runs > 1 { format!(" (mean of {n_runs} runs)") } else { String::new() };
+
+    match outcome {
+        Outcome::NotActivated => {
+            t.print(&format!("→ Policy not activated{suffix}"));
+            println!("  (metrics not evaluated)");
+        }
+        Outcome::Activated {
+            n_elements, n_classes, k_ok, l_ok, t_ok, k_max, l_max, t_min, at_risk, sens_risk,
+        } => {
+            t.print(&format!("Phases{suffix}"));
+            println!("  Summary:");
+            println!("    Protected elements:     {n_elements}");
+            println!("    Equivalence classes:    {n_classes}");
+            println!("    k={} {} | l={} {} | t={} {}",
+                policy.k, if k_ok { "✓" } else { "✗" },
+                policy.l, if l_ok { "✓" } else { "✗" },
+                policy.t, if t_ok { "✓" } else { "✗" });
+            println!("    k_max={k_max} | l_max={l_max} | t_min={t_min:?}");
+            if !at_risk.is_empty() {
+                println!("    Elements at k-risk: {} (first 5: {:?})",
+                    at_risk.len(), at_risk.iter().take(5).collect::<Vec<_>>());
+            }
+            for r in &sens_risk {
+                if !r.at_risk_values.is_empty() {
+                    println!("    At-risk values [{}]: {:?}", r.attr_name,
+                        r.at_risk_values.iter().take(10).collect::<Vec<_>>());
+                }
+            }
         }
     }
 }
@@ -237,19 +334,25 @@ fn run_experiment(
 // Binding box evaluation
 // =============================================================================
 
-fn timed_evaluate(bbox: &BindingBox, ocel: &SlimLinkedOCEL, label: &str)
+fn timed_evaluate(bbox: &BindingBox, ocel: &SlimLinkedOCEL, label: &str, n_runs: usize)
     -> (Vec<Arc<Binding>>, Duration)
 {
     let tree = BindingBoxTree {
         nodes:      vec![BindingBoxTreeNode::Box(bbox.clone(), vec![])],
         edge_names: HashMap::new(),
     };
-    let t = Instant::now();
-    let (results, skipped) = tree.evaluate(ocel)
-        .unwrap_or_else(|e| panic!("Error evaluating {label}: {e}"));
-    let elapsed = t.elapsed();
-    if skipped { eprintln!("  Warning: some bindings of {label} were skipped"); }
-    (results.into_iter().map(|(_i, b, _v)| b).collect(), elapsed)
+    let mut total = Duration::ZERO;
+    let mut last_results = Vec::new();
+    for _ in 0..n_runs {
+        let t = Instant::now();
+        let (results, skipped) = tree.evaluate(ocel)
+            .unwrap_or_else(|e| panic!("Error evaluating {label}: {e}"));
+        total += t.elapsed();
+        if skipped { eprintln!("  Warning: some bindings of {label} were skipped"); }
+        last_results = results; // deterministic: identical across runs
+    }
+    let mean = total / n_runs as u32;
+    (last_results.into_iter().map(|(_i, b, _v)| b).collect(), mean)
 }
 
 // =============================================================================
