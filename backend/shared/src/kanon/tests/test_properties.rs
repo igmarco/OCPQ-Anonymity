@@ -1,10 +1,10 @@
-//! Tests unitarios de [`crate::kanon::properties`].
+//! Unit tests for [`crate::kanon::properties`].
 //!
-//! Cubren las tres capas de evaluación:
-//! - Capa 1: [`eval_k`], [`eval_l`], [`eval_t`]
-//! - Capa 2: [`find_k_max`], [`find_l_max`], [`find_t_min`]
-//! - Capa 3: [`elements_at_risk`], [`sensitive_values_at_risk`]
-//! - Función interna: [`discrete_emd`]
+//! Covers the three evaluation layers:
+//! - Layer 1: [`eval_k`], [`eval_l`], [`eval_t`]
+//! - Layer 2: [`find_k_max`], [`find_l_max`], [`find_t_min`]
+//! - Layer 3: [`elements_at_risk`], [`sensitive_values_at_risk`]
+//! - Internal function: [`discrete_emd`]
 
 use crate::kanon::fingerprint::{{Fingerprint, QidValue}};
 use crate::kanon::properties::{{
@@ -15,23 +15,24 @@ use std::collections::{{BTreeMap, HashMap,}};
 
 
     // -------------------------------------------------------------------------
-    // Helper: PolicyContext sintético (sin OCEL real)
+    // Helper: synthetic PolicyContext (without a real OCEL)
     // -------------------------------------------------------------------------
 
     fn qv(s: &str) -> QidValue {
         QidValue::Str(s.to_string())
     }
 
-    /// Construye un PolicyContext mínimo con las clases y valores sensibles
-    /// dados.  `classes` es una lista de (miembros, valor_sensible).
+    /// Builds a minimal `PolicyContext` with the given equivalence classes and
+    /// sensitive values. `classes` is a list of
+    /// `(members, sensitive_values)`.
     fn make_ctx(classes: Vec<(Vec<&str>, Vec<&str>)>) -> PolicyContext {
-        // class_map: fingerprint vacío como clave (no relevante para estos tests)
+        // class_map: use an empty fingerprint as the key (irrelevant for these tests)
         let mut class_map: BTreeMap<Fingerprint, Vec<String>> = BTreeMap::new();
         let mut sens_map: HashMap<String, Vec<QidValue>> = HashMap::new();
         let mut global_dist: BTreeMap<Vec<QidValue>, usize> = BTreeMap::new();
 
         for (i, (members, sens_vals)) in classes.iter().enumerate() {
-            // Usar el índice como fingerprint para que sean distintas
+            // Use the index as fingerprint to make them distinct
             let fp: Fingerprint = vec![
                 [(QidValue::Int(i as i64), 1)].into()
             ];
@@ -75,7 +76,7 @@ use std::collections::{{BTreeMap, HashMap,}};
     #[test]
     fn eval_k_violated_when_class_too_small() {
         let ctx = make_ctx(vec![
-            (vec!["v1"],      vec!["large"]),  // tamaño 1 < k=2
+            (vec!["v1"],      vec!["large"]),  // size 1 < k=2
             (vec!["v3","v4"], vec!["small"]),
         ]);
         let r = eval_k(&ctx, 2);
@@ -109,14 +110,14 @@ use std::collections::{{BTreeMap, HashMap,}};
             (vec!["v1","v2"], vec!["large"]),
             (vec!["v3","v4"], vec!["small"]),
         ]);
-        // Cada clase tiene un solo valor sensible; l=1 debe satisfacerse
+        // Each class has a single sensitive value; l=1 should be satisfied
         let r = eval_l(&ctx, 1);
         assert!(r.satisfied);
     }
 
     #[test]
     fn eval_l_violated_when_all_same_sensitive_value() {
-        // Clase donde todos tienen "large" → solo 1 valor distinto < l=2
+        // Class where all have "large" → only 1 distinct value < l=2
         let ctx = make_ctx(vec![
             (vec!["v1","v2"], vec!["large"]),
         ]);
@@ -145,12 +146,12 @@ use std::collections::{{BTreeMap, HashMap,}};
 
     #[test]
     fn eval_t_identical_to_global_emd_zero() {
-        // Clase con large+small; global también large+small → EMD=0
+        // Class with large+small; global also large+small → EMD=0
         let mut ctx = make_ctx(vec![
             (vec!["v1"], vec!["large"]),
             (vec!["v2"], vec!["small"]),
         ]);
-        // Hacemos que sea una sola clase juntando los dos elementos
+        // Make it a single class by combining the two elements
         let fp: Fingerprint = vec![[(QidValue::Int(99), 1)].into()];
         ctx.class_map = BTreeMap::new();
         ctx.class_map.insert(fp, vec!["v1".to_string(), "v2".to_string()]);
@@ -184,13 +185,13 @@ use std::collections::{{BTreeMap, HashMap,}};
 
     #[test]
     fn find_l_max_returns_min_distinct_sensitive() {
-        // Clase A: large+small → 2 distintos
-        // Clase B: solo large  → 1 distinto
+        // Class A: large + small → 2 distinct values
+        // Class B: only large → 1 distinct value
         let ctx = make_ctx(vec![
             (vec!["v1","v2"], vec!["large"]),
             (vec!["v3","v4"], vec!["small"]),
         ]);
-        // Ambas clases tienen 1 valor distinto (cada una su propio valor)
+        // Both classes have 1 distinct value (each has their own value)
         assert_eq!(find_l_max(&ctx), 1);
     }
 
@@ -202,9 +203,9 @@ use std::collections::{{BTreeMap, HashMap,}};
         ]);
         let t_result = eval_t(&ctx, 0.9);
         let t_min = find_t_min(&ctx, &t_result);
-        // Con atributos sensibles deberíamos tener Some(...)
-        // En este caso cada clase tiene solo un valor que no está en la otra
-        // → EMD ≈ 1 para cada clase
+        // With sensitive attributes we should have Some(...)
+        // In this case each class has only one value that is not in the other
+        // → EMD ≈ 1 for each class
         if let Some(v) = t_min {
             assert!(v >= 0.0 && v <= 1.0, "t_min must be in [0,1], got {v}");
         }
@@ -212,7 +213,7 @@ use std::collections::{{BTreeMap, HashMap,}};
 
     #[test]
     fn find_t_min_none_without_sensitive_attrs() {
-        // PolicyContext sin atributos sensibles (global_dist vacío)
+        // PolicyContext without sensitive attributes (global_dist empty)
         let ctx = PolicyContext {
             class_map:             BTreeMap::new(),
             sens_map:              HashMap::new(),
@@ -253,7 +254,7 @@ use std::collections::{{BTreeMap, HashMap,}};
 
     #[test]
     fn sensitive_values_at_risk_captures_values_in_violating_classes() {
-        // Clase que viola l=2 (solo "large")
+        // Class that violates l=2 (only "large")
         let ctx = make_ctx(vec![
             (vec!["v1","v2"], vec!["large"]),
         ]);
@@ -272,7 +273,7 @@ use std::collections::{{BTreeMap, HashMap,}};
             (vec!["v1","v2"], vec!["large"]),
             (vec!["v3","v4"], vec!["small"]),
         ]);
-        // l=1 trivialmente satisfecho para clases con 1 valor distinto
+        // l = 1 is trivially satisfied for classes containing one distinct value
         let l_result = eval_l(&ctx, 1);
         let t_result = eval_t(&ctx, 1.0);
         let risks = sensitive_values_at_risk(&l_result, &t_result, &["capacity".to_string()]);
