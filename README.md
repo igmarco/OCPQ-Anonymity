@@ -2,9 +2,7 @@
 > adds an anonymity framework (k-anonymity, l-diversity, t-closeness) for object-centric
 > event data, as companion code for an in-preparation paper. See the **Anonymity
 > Extension** section below, and [NOTICE](./NOTICE) / [LICENSE](./LICENSE) for the
-> licensing scope of the added files. This repository is currently private while
-> redistribution terms for the base OCPQ code are being clarified with the original
-> author.
+> licensing scope of the added files.
 
 ## Anonymity Extension
 
