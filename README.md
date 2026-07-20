@@ -1,3 +1,58 @@
+> **Fork notice.** This is a fork of [aarkue/OCPQ](https://github.com/aarkue/OCPQ) that
+> adds an anonymity framework (k-anonymity, l-diversity, t-closeness) for object-centric
+> event data, as companion code for an in-preparation paper. See the **Anonymity
+> Extension** section below, and [NOTICE](./NOTICE) / [LICENSE](./LICENSE) for the
+> licensing scope of the added files. This repository is currently private while
+> redistribution terms for the base OCPQ code are being clarified with the original
+> author.
+
+## Anonymity Extension
+
+Adds the following on top of upstream OCPQ:
+
+- **`backend/shared/src/kanon/`** — the anonymity framework itself, as a submodule of
+  the `ocpq_shared` crate:
+  - `policy.rs` — `Pattern`, `QuasiIdentifier`, `AnonPolicy` (anonymity policies:
+    patterns, protected/source variables, QID attributes, sensitive attributes, k/l/t
+    parameters).
+  - `activation.rs` — predicate compatibility, pattern matching (`find_matchings`), and
+    active binding set construction.
+  - `fingerprint.rs` — source-set computation and the fingerprint construction
+    (marginal fingerprints per QID, combined into equivalence classes).
+  - `properties.rs` — evaluation of k-anonymity, l-diversity and t-closeness against
+    the fingerprint partition, plus limit analysis (`find_k_max`, `find_l_max`,
+    `find_t_min`) and risk analysis (`elements_at_risk`, `sensitive_values_at_risk`).
+  - `report.rs` — `AnonReport` / `EquivClass`, the structured result of evaluating a
+    policy (`check_policy`, the module's single public entry point).
+- **`kanon-demo`** (new Cargo workspace member) — a timing harness (`main.rs`) that
+  runs nine experiments (three binding boxes × three anonymity policies) over a BPI
+  Challenge 2017 OCEL, timing each phase of the pipeline (activation, `build_context`,
+  `eval_k/l/t`, `find_k/l/t_max/min`, risk analysis).
+
+The correspondence between the code and the paper's formal definitions is documented
+directly in each module's doc comments (`cargo doc` renders them).
+
+### Running the demo
+
+```sh
+cargo run --release -p kanon-demo -- <path/to/bpic2017-ocel2.json>
+```
+
+This loads the OCEL, evaluates the three binding boxes with the OCPQ engine, and runs
+the nine experiments described above, printing per-phase timings and a summary
+(protected elements, equivalence classes, k/l/t satisfaction) for each one.
+
+### Scope of the anonymity framework
+
+- The evaluated `BindingBox` must have no structural constraints and no labels
+  (checked via `debug_assert` in `build_context`).
+- Pattern predicates are restricted to `BASIC_L`: `O2E`, `O2O`, `TimeBetweenEvents`.
+- A single qualifier per predicate (`Option<String>`, `None` = wildcard); set-valued
+  qualifiers are future work.
+- Discrete equality throughout; no binning for continuous attributes or timestamps.
+
+---
+
 # OCPQ (Object-Centric Process Querying)
 [__Download__](https://github.com/aarkue/ocpq/releases/latest)
 
