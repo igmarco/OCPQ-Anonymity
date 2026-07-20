@@ -1,0 +1,16 @@
+This repository contains two distinct pieces of code:
+
+1. OCPQ (backend/, frontend/, tauri/, etc.), originally developed by
+   Aaron Kuesters and available at https://github.com/aarkue/OCPQ.
+   No license file was present in the original repository at the time
+   this project was started; the code is included here for private,
+   internal development while redistribution terms are being clarified
+   directly with the original author.
+
+2. The anonymity-framework extension (backend/shared/src/kanon/, the
+   kanon-demo crate, and associated documentation), written for the
+   companion in-preparation paper on k-anonymity in OCPQ. This part is
+   covered by the MIT license in LICENSE.
+
+This repository is currently private and not intended for public
+redistribution until point 1 above is resolved.
