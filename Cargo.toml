@@ -5,6 +5,7 @@ members = [
 	"backend/shared",
   "backend/web-server",
   "backend/ocpq_cli",
+  "backend/kanon_demo",
   "tauri/src-tauri/"
 ]
 
