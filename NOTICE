@@ -12,5 +12,5 @@ This repository contains two distinct pieces of code:
    companion in-preparation paper on k-anonymity in OCPQ. This part is
    covered by the MIT license in LICENSE.
 
-This repository is currently private and not intended for public
-redistribution until point 1 above is resolved.
+This repository is currently not intended for public redistribution
+until point 1 above is resolved.
