@@ -1,0 +1,862 @@
+{
+  "objectTypes": [
+    {
+      "name": "Application",
+      "attributes": []
+    },
+    {
+      "name": "Offer",
+      "attributes": []
+    },
+    {
+      "name": "Workflow",
+      "attributes": []
+    },
+    {
+      "name": "Case_R",
+      "attributes": []
+    }
+  ],
+  "eventTypes": [
+    {
+      "name": "A_Submitted",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "type": "string"
+        },
+        {
+          "name": "LoanGoal",
+          "type": "string"
+        },
+        {
+          "name": "EventOrigin",
+          "type": "string"
+        },
+        {
+          "name": "CreditScore",
+          "type": "string"
+        },
+        {
+          "name": "Action",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "A_Validating",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "type": "string"
+        },
+        {
+          "name": "EventOrigin",
+          "type": "string"
+        },
+        {
+          "name": "Action",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "O_Created",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "type": "string"
+        },
+        {
+          "name": "EventOrigin",
+          "type": "string"
+        },
+        {
+          "name": "OfferedAmount",
+          "type": "string"
+        },
+        {
+          "name": "Action",
+          "type": "string"
+        },
+        {
+          "name": "LoanGoal",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "O_Accepted",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "type": "string"
+        },
+        {
+          "name": "EventOrigin",
+          "type": "string"
+        },
+        {
+          "name": "NumberOfTerms",
+          "type": "string"
+        },
+        {
+          "name": "MonthlyCost",
+          "type": "string"
+        },
+        {
+          "name": "Action",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "app1",
+      "type": "Application",
+      "attributes": [],
+      "relationships": [
+        {
+          "objectId": "off1",
+          "qualifier": "offer"
+        },
+        {
+          "objectId": "off2",
+          "qualifier": "offer"
+        }
+      ]
+    },
+    {
+      "id": "app2",
+      "type": "Application",
+      "attributes": [],
+      "relationships": [
+        {
+          "objectId": "off3",
+          "qualifier": "offer"
+        },
+        {
+          "objectId": "off4",
+          "qualifier": "offer"
+        }
+      ]
+    },
+    {
+      "id": "app3",
+      "type": "Application",
+      "attributes": [],
+      "relationships": [
+        {
+          "objectId": "off5",
+          "qualifier": "offer"
+        }
+      ]
+    },
+    {
+      "id": "app4",
+      "type": "Application",
+      "attributes": [],
+      "relationships": [
+        {
+          "objectId": "off6",
+          "qualifier": "offer"
+        }
+      ]
+    },
+    {
+      "id": "off1",
+      "type": "Offer",
+      "attributes": [],
+      "relationships": []
+    },
+    {
+      "id": "off2",
+      "type": "Offer",
+      "attributes": [],
+      "relationships": []
+    },
+    {
+      "id": "off3",
+      "type": "Offer",
+      "attributes": [],
+      "relationships": []
+    },
+    {
+      "id": "off4",
+      "type": "Offer",
+      "attributes": [],
+      "relationships": []
+    },
+    {
+      "id": "off5",
+      "type": "Offer",
+      "attributes": [],
+      "relationships": []
+    },
+    {
+      "id": "off6",
+      "type": "Offer",
+      "attributes": [],
+      "relationships": []
+    },
+    {
+      "id": "wf1",
+      "type": "Workflow",
+      "attributes": [],
+      "relationships": []
+    },
+    {
+      "id": "wf2",
+      "type": "Workflow",
+      "attributes": [],
+      "relationships": []
+    },
+    {
+      "id": "cr1",
+      "type": "Case_R",
+      "attributes": [],
+      "relationships": []
+    }
+  ],
+  "events": [
+    {
+      "id": "as1",
+      "type": "A_Submitted",
+      "time": "2017-01-01T08:00:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "New credit"
+        },
+        {
+          "name": "LoanGoal",
+          "value": "Car"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Application"
+        },
+        {
+          "name": "CreditScore",
+          "value": "500"
+        },
+        {
+          "name": "Action",
+          "value": "Created"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "app1",
+          "qualifier": "application"
+        },
+        {
+          "objectId": "cr1",
+          "qualifier": "case"
+        }
+      ]
+    },
+    {
+      "id": "as2",
+      "type": "A_Submitted",
+      "time": "2017-01-02T08:00:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "New credit"
+        },
+        {
+          "name": "LoanGoal",
+          "value": "Home improvement"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Application"
+        },
+        {
+          "name": "CreditScore",
+          "value": "520"
+        },
+        {
+          "name": "Action",
+          "value": "Created"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "app2",
+          "qualifier": "application"
+        }
+      ]
+    },
+    {
+      "id": "as3",
+      "type": "A_Submitted",
+      "time": "2017-01-03T08:00:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "Limit raise"
+        },
+        {
+          "name": "LoanGoal",
+          "value": "Car"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Application"
+        },
+        {
+          "name": "CreditScore",
+          "value": "600"
+        },
+        {
+          "name": "Action",
+          "value": "Created"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "app3",
+          "qualifier": "application"
+        }
+      ]
+    },
+    {
+      "id": "as4",
+      "type": "A_Submitted",
+      "time": "2017-01-04T08:00:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "Limit raise"
+        },
+        {
+          "name": "LoanGoal",
+          "value": "Home improvement"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Application"
+        },
+        {
+          "name": "CreditScore",
+          "value": "610"
+        },
+        {
+          "name": "Action",
+          "value": "Created"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "app4",
+          "qualifier": "application"
+        }
+      ]
+    },
+    {
+      "id": "av1",
+      "type": "A_Validating",
+      "time": "2017-01-01T09:00:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "New credit"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Workflow"
+        },
+        {
+          "name": "Action",
+          "value": "Start"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "wf1",
+          "qualifier": "workflow"
+        },
+        {
+          "objectId": "app1",
+          "qualifier": "application"
+        }
+      ]
+    },
+    {
+      "id": "av2",
+      "type": "A_Validating",
+      "time": "2017-01-02T09:00:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "Limit raise"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Workflow"
+        },
+        {
+          "name": "Action",
+          "value": "Start"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "wf2",
+          "qualifier": "workflow"
+        },
+        {
+          "objectId": "app3",
+          "qualifier": "application"
+        }
+      ]
+    },
+    {
+      "id": "oc1",
+      "type": "O_Created",
+      "time": "2017-01-01T10:00:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "New credit"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Offer"
+        },
+        {
+          "name": "OfferedAmount",
+          "value": "10000"
+        },
+        {
+          "name": "Action",
+          "value": "Created"
+        },
+        {
+          "name": "LoanGoal",
+          "value": "Car"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "off1",
+          "qualifier": "offer"
+        },
+        {
+          "objectId": "app1",
+          "qualifier": "application"
+        }
+      ]
+    },
+    {
+      "id": "oc2",
+      "type": "O_Created",
+      "time": "2017-01-01T10:30:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "New credit"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Offer"
+        },
+        {
+          "name": "OfferedAmount",
+          "value": "12000"
+        },
+        {
+          "name": "Action",
+          "value": "Created"
+        },
+        {
+          "name": "LoanGoal",
+          "value": "Car"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "off2",
+          "qualifier": "offer"
+        },
+        {
+          "objectId": "app1",
+          "qualifier": "application"
+        }
+      ]
+    },
+    {
+      "id": "oc3",
+      "type": "O_Created",
+      "time": "2017-01-02T10:00:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "New credit"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Offer"
+        },
+        {
+          "name": "OfferedAmount",
+          "value": "8000"
+        },
+        {
+          "name": "Action",
+          "value": "Created"
+        },
+        {
+          "name": "LoanGoal",
+          "value": "Home improvement"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "off3",
+          "qualifier": "offer"
+        },
+        {
+          "objectId": "app2",
+          "qualifier": "application"
+        }
+      ]
+    },
+    {
+      "id": "oc4",
+      "type": "O_Created",
+      "time": "2017-01-02T10:30:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "Limit raise"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Offer"
+        },
+        {
+          "name": "OfferedAmount",
+          "value": "9000"
+        },
+        {
+          "name": "Action",
+          "value": "Created"
+        },
+        {
+          "name": "LoanGoal",
+          "value": "Home improvement"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "off4",
+          "qualifier": "offer"
+        },
+        {
+          "objectId": "app2",
+          "qualifier": "application"
+        }
+      ]
+    },
+    {
+      "id": "oc5",
+      "type": "O_Created",
+      "time": "2017-01-03T10:00:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "Limit raise"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Offer"
+        },
+        {
+          "name": "OfferedAmount",
+          "value": "5000"
+        },
+        {
+          "name": "Action",
+          "value": "Created"
+        },
+        {
+          "name": "LoanGoal",
+          "value": "Car"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "off5",
+          "qualifier": "offer"
+        },
+        {
+          "objectId": "app3",
+          "qualifier": "application"
+        }
+      ]
+    },
+    {
+      "id": "oc6",
+      "type": "O_Created",
+      "time": "2017-01-04T10:00:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "Limit raise"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Offer"
+        },
+        {
+          "name": "OfferedAmount",
+          "value": "6000"
+        },
+        {
+          "name": "Action",
+          "value": "Created"
+        },
+        {
+          "name": "LoanGoal",
+          "value": "Home improvement"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "off6",
+          "qualifier": "offer"
+        },
+        {
+          "objectId": "app4",
+          "qualifier": "application"
+        }
+      ]
+    },
+    {
+      "id": "oa1",
+      "type": "O_Accepted",
+      "time": "2017-01-05T11:00:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "New credit"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Application"
+        },
+        {
+          "name": "NumberOfTerms",
+          "value": "36"
+        },
+        {
+          "name": "MonthlyCost",
+          "value": "310"
+        },
+        {
+          "name": "Action",
+          "value": "Complete"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "off1",
+          "qualifier": "offer"
+        },
+        {
+          "objectId": "app1",
+          "qualifier": "application"
+        }
+      ]
+    },
+    {
+      "id": "oa2",
+      "type": "O_Accepted",
+      "time": "2017-01-06T11:00:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "New credit"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Application"
+        },
+        {
+          "name": "NumberOfTerms",
+          "value": "36"
+        },
+        {
+          "name": "MonthlyCost",
+          "value": "290"
+        },
+        {
+          "name": "Action",
+          "value": "Complete"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "off3",
+          "qualifier": "offer"
+        },
+        {
+          "objectId": "app2",
+          "qualifier": "application"
+        }
+      ]
+    },
+    {
+      "id": "oa3",
+      "type": "O_Accepted",
+      "time": "2017-01-07T11:00:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "Limit raise"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Application"
+        },
+        {
+          "name": "NumberOfTerms",
+          "value": "60"
+        },
+        {
+          "name": "MonthlyCost",
+          "value": "180"
+        },
+        {
+          "name": "Action",
+          "value": "Complete"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "off5",
+          "qualifier": "offer"
+        },
+        {
+          "objectId": "app3",
+          "qualifier": "application"
+        }
+      ]
+    },
+    {
+      "id": "oa4",
+      "type": "O_Accepted",
+      "time": "2017-01-08T11:00:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "Limit raise"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Application"
+        },
+        {
+          "name": "NumberOfTerms",
+          "value": "60"
+        },
+        {
+          "name": "MonthlyCost",
+          "value": "200"
+        },
+        {
+          "name": "Action",
+          "value": "Complete"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "off6",
+          "qualifier": "offer"
+        },
+        {
+          "objectId": "app4",
+          "qualifier": "application"
+        }
+      ]
+    },
+    {
+      "id": "oa5",
+      "type": "O_Accepted",
+      "time": "2017-01-05T12:00:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "New credit"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Application"
+        },
+        {
+          "name": "NumberOfTerms",
+          "value": "24"
+        },
+        {
+          "name": "MonthlyCost",
+          "value": "520"
+        },
+        {
+          "name": "Action",
+          "value": "Complete"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "off2",
+          "qualifier": "offer"
+        },
+        {
+          "objectId": "app1",
+          "qualifier": "application"
+        }
+      ]
+    },
+    {
+      "id": "oa6",
+      "type": "O_Accepted",
+      "time": "2017-01-06T12:00:00Z",
+      "attributes": [
+        {
+          "name": "ApplicationType",
+          "value": "Limit raise"
+        },
+        {
+          "name": "EventOrigin",
+          "value": "Application"
+        },
+        {
+          "name": "NumberOfTerms",
+          "value": "48"
+        },
+        {
+          "name": "MonthlyCost",
+          "value": "220"
+        },
+        {
+          "name": "Action",
+          "value": "Complete"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "off4",
+          "qualifier": "offer"
+        },
+        {
+          "objectId": "app2",
+          "qualifier": "application"
+        }
+      ]
+    }
+  ]
+}
