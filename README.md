@@ -7,6 +7,7 @@
 ## Anonymity Extension
 
 ![Component diagram of *kanon*](figures/comp_diag.png)
+
 Component diagram of *kanon: one block per script,
 with its main artifacts (structs), their composition, and the
 modules and interfaces (public functions) operating on them.
