@@ -8,6 +8,10 @@ description = "Prototype demo for the k-anonymity framework for OCPQ."
 name = "kanon_demo"
 path = "src/main.rs"
 
+[[bin]]
+name = "kanon_supp_demo_syn"
+path = "src/kanon_supp_demo_syn.rs"
+
 [dependencies]
 ocpq-shared = { path = "../shared" }
 process_mining = { git = "https://github.com/aarkue/rust4pm", features = ["ocel-sqlite"], branch = "feat/oced-paths" }
