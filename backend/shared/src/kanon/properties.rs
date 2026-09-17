@@ -1,26 +1,57 @@
-//! Anonymity-property evaluation, organised in four layers:
+//! Anonymity-property evaluation.
+//!
+//! This module is organised in four layers:
 //!
 //! ```text
-//! build_context          → PolicyContext   (shared by all layers)
+//! build_context          → PolicyContext   (computed once, shared by all layers)
 //!
-//! LAYER 1 — Pointwise      eval_k/l/t(ctx, param) → K/L/TResult
-//! LAYER 2 — Limits         find_k/l/t_max/min(ctx) → usize / Option<f64>
-//! LAYER 3 — Risk           elements_at_risk, sensitive_values_at_risk
+//! LAYER 1 — Pointwise evaluation
+//!   eval_k(ctx, k)       → KResult
+//!   eval_l(ctx, l)       → LResult
+//!   eval_t(ctx, t)       → TResult
+//!
+//! LAYER 2 — Limit analysis (policy-parameter-free)
+//!   find_k_max(ctx)      → usize
+//!   find_l_max(ctx)      → usize
+//!   find_t_min(ctx)      → Option<f64>
+//!
+//! LAYER 3 — Risk analysis (depends on Layer 1 outputs)
+//!   elements_at_risk(k_result)                          → Vec<String>
+//!   sensitive_values_at_risk(l_result, t_result, attrs) → Vec<SensitiveAttrRisk>
 //! ```
 //!
-//! [`report::check_policy`] is the public entry point.
+//! [`report::check_policy`] is the public entry point: it calls `build_context`,
+//! runs all three layers, and assembles the [`AnonReport`].
 //!
 //! ## Scope
-//! Assumes [`BindingBox`] has **no constraints and no labels** (`debug_assert`
-//! in [`build_context`]). Supporting structural constraints (§5 of the paper)
-//! would require checking anonymity on the satisfied/violated subset of each
-//! sign assignment `σ : Γ → {+, −}` *and* on the full output; k-anonymity and
-//! l-diversity on the full set then follow automatically from both subsets,
-//! but t-closeness does not inherit this way.
+//!
+//! The prototype assumes the [`BindingBox`] has **no constraints and no labels**
+//! (enforced by `debug_assert` in [`build_context`]).
+//!
+//! ### Constraints — future work
+//!
+//! Supporting structural constraints would require, for each sign assignment
+//! `σ : Γ → {+, −}` over the set Γ of constraints:
+//!
+//! 1. Partitioning `out_L(b)` into the satisfied subset `out_L(b^+_σ)` and
+//!    its complement.
+//! 2. Checking anonymity independently on each subset **and** on the full
+//!    `out_L(b)`.
+//!
+//! If both the satisfied AND the violated subset are checked for each single
+//! constraint, k-anonymity and l-diversity on the full set follow automatically
+//! (the full set is the disjoint union of the two subsets).  t-closeness does
+//! **not** inherit this way.
 //!
 //! ## t-closeness ground metric
-//! Discrete only: `EMD = 1 − Σ_v min(P_local(v), P_global(v))`. Binning for
-//! continuous attributes is future work.
+//!
+//! Only the discrete metric is used.  Under it, EMD simplifies to:
+//!
+//! ```text
+//! EMD = 1 − Σ_v min(P_local(v), P_global(v))
+//! ```
+//!
+//! Binning / rounding for continuous attributes is future work.
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
@@ -41,36 +72,37 @@ use crate::kanon::{
 // Shared base: PolicyContext
 // =============================================================================
 
-/// Base computations shared by all evaluation layers. Build once with
-/// [`build_context`], pass to every layer.
+/// The results of the one-time base computations shared by all evaluation
+/// layers.  Build it once with [`build_context`] and pass it to every layer.
 pub struct PolicyContext {
-    /// Fingerprint → type-qualified element IDs.
+    /// Equivalence classes: Fingerprint → list of type-qualified element IDs.
     pub class_map: BTreeMap<Fingerprint, Vec<String>>,
     /// Type-qualified element ID → sensitive-attribute tuple.
     pub sens_map: HashMap<String, Vec<QidValue>>,
     /// Global distribution of sensitive-value tuples (for t-closeness).
     pub global_dist: BTreeMap<Vec<QidValue>, usize>,
-    /// Total protected elements (sum of class sizes).
+    /// Total number of protected elements (sum of class sizes).
     pub global_total: usize,
-    /// IDs of activated QIDs.
+    /// IDs of QIDs whose pattern matched the binding box.
     pub activated_qid_ids: Vec<String>,
-    /// IDs of non-activated QIDs.
+    /// IDs of QIDs whose pattern did not match.
     pub non_activated_qid_ids: Vec<String>,
 }
 
 impl PolicyContext {
-    /// `true` iff at least one QID was activated.
+    /// Whether at least one QID was activated.
     pub fn policy_activated(&self) -> bool {
         !self.activated_qid_ids.is_empty()
     }
 }
 
-/// Builds the [`PolicyContext`] for `policy` against `bbox`'s evaluated
-/// output. The only function touching the OCEL/binding output directly;
-/// all other layers operate on the context alone.
+/// Build the [`PolicyContext`] for `policy` against the evaluated `bbox` output.
+///
+/// This is the only function that touches the OCEL and the binding output.
+/// All subsequent layer functions operate on the context alone.
 ///
 /// # Panics (debug)
-/// If `bbox` has constraints or labels (outside prototype scope).
+/// Panics when `bbox` has constraints or labels (outside prototype scope).
 pub fn build_context(
     policy: &AnonPolicy,
     bbox: &BindingBox,
@@ -302,14 +334,15 @@ pub fn find_l_max(ctx: &PolicyContext) -> usize {
         .unwrap_or(0)
 }
 
-/// The minimum discrete EMD across all classes: the most restrictive
-/// t-closeness the data satisfies.
+/// The minimum t the data actually satisfies: the *largest* discrete EMD
+/// across all classes (the worst, most-skewed class is what fixes how loose
+/// t must be for every class to pass at once).
 /// Returns `None` when there are no sensitive attributes.
 pub fn find_t_min(ctx: &PolicyContext, t_result: &TResult) -> Option<f64> {
     if ctx.global_dist.is_empty() {
         return None;
     }
-    t_result.classes.iter().filter_map(|c| c.emd).reduce(f64::min)
+    t_result.classes.iter().filter_map(|c| c.emd).reduce(f64::max)
 }
 
 // =============================================================================
@@ -376,9 +409,19 @@ pub fn sensitive_values_at_risk(
 // Internal helpers
 // =============================================================================
 
-/// Type-qualified element ID → sensitive-attribute tuple, read directly from
-/// the protected element via the OCEL attribute API (O(elements × |attrs|),
-/// optimal for this access pattern; `_out` unused, kept for signature symmetry).
+/// Build a map from type-qualified element ID to its sensitive-attribute tuple.
+///
+/// Each [`SensitiveAttr`] declares a structural access path (pattern +
+/// protected var + source var + attribute) for reading the sensitive value,
+/// evaluated against `out` exactly as QIDs are evaluated in
+/// `compute_source_set`.  This handles OCEDs where protected objects carry
+/// no attributes of their own (e.g. BPI 2017).
+/// Build a map from type-qualified element ID to its sensitive-attribute tuple.
+///
+/// Sensitive attributes are read directly from the protected element (event or
+/// object) using the OCEL attribute API.  Because this is a direct lookup by
+/// element index (not a scan over `out`) the cost is O(elements × |attrs|),
+/// which is already optimal for this access pattern.
 pub(crate) fn build_sensitive_map(
     policy: &AnonPolicy,
     _out: &[Arc<Binding>],
